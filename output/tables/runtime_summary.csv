@@ -1,0 +1,9 @@
+script,elapsed_seconds,elapsed_minutes
+06_gesamtauswertung,796.3523,13.272538333333333
+03_RandomForest_Variante3_Fit,202.3677,3.3727950000000004
+04_HistGradientBoosting_Fit,127.203,2.12005
+04_XGBoost_RandomSearch_Fit,67.0127,1.1168783333333332
+02_LogReg_GridSearch_Fit,24.3044,0.40507333333333334
+03_RandomForest_Baseline_Fit,12.7528,0.2125466666666667
+05_LinearSVC_Final_Fit,8.3643,0.139405
+02_LogReg_Final_Fit,4.2492,0.07082000000000001

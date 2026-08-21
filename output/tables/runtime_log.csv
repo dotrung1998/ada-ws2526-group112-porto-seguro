@@ -1,0 +1,12 @@
+script,start_time,elapsed_seconds
+06_gesamtauswertung,2026-08-21T18:11:59,1095.3121
+06_gesamtauswertung,2026-08-21T18:37:56,796.3523
+02_LogReg_GridSearch_Fit,2026-08-21T18:52:10,24.3044
+02_LogReg_Final_Fit,2026-08-21T18:52:14,4.2492
+03_RandomForest_Baseline_Fit,2026-08-21T18:53:46,12.7528
+03_RandomForest_Variante3_Fit,2026-08-21T18:57:09,202.3677
+04_XGBoost_RandomSearch_Fit,2026-08-21T18:58:18,67.0127
+04_HistGradientBoosting_Fit,2026-08-21T19:00:26,127.2030
+05_LinearSVC_Final_Fit,2026-08-21T19:09:32,8.3643
+06_gesamtauswertung,2026-08-21T18:51:19,1093.9877
+01_eda,2026-08-21T19:18:41,7.2683
