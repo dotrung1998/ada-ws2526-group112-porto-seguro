@@ -1,6 +1,13 @@
 """
 03_random_forest.py
 Modellierung: Random Forest (Finales Modell).
+
+Dieses Skript nutzt die gemeinsamen Projektmodule:
+- data_loading: Einheitlicher Datenbezug
+- preprocessing: Zentrale Feature-Gruppierung und Preprocessor-Pipeline
+- config: Einheitliche Konfiguration fuer Reproduzierbarkeit (RANDOM_STATE, TEST_SIZE)
+- plotting: Speichern von Abbildungen unter output/figures/
+- timing: Laufzeitmessung und Protokollierung
 """
 
 import time
@@ -10,14 +17,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.base import clone
-from sklearn.compose import ColumnTransformer
-from sklearn.datasets import fetch_openml
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.impute import SimpleImputer
 from sklearn.metrics import (
     average_precision_score,
     balanced_accuracy_score,
-    classification_report,
     confusion_matrix,
     f1_score,
     precision_score,
@@ -31,29 +34,27 @@ from sklearn.model_selection import (
     train_test_split,
 )
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder
 
+from config import RANDOM_STATE, TEST_SIZE
+from data_loading import load_data
 from plotting import save_current_figure
+from preprocessing import build_preprocessor, get_feature_groups
 from timing import log_custom_runtime, measure_runtime
 
 warnings.filterwarnings("ignore")
 
-RANDOM_STATE = 42
-TEST_SIZE = 0.20
 N_SPLITS = 3
 
 # %% Teil 1: Gemeinsame Datenbasis & Basisblock
-porto = fetch_openml(data_id=42742, as_frame=True)
+# Datenbezug ueber zentrales Modul
+df_raw = load_data()
+df_cleaned = df_raw.copy()
 
-X = porto.data.copy().replace(-1, np.nan)
-y = pd.to_numeric(porto.target).astype("int8")
+X = df_cleaned.drop(columns=["target"])
+y = pd.to_numeric(df_cleaned["target"]).astype("int8")
 
-categorical_features = [c for c in X.columns if c.endswith("_cat")]
-binary_features = [c for c in X.columns if c.endswith("_bin")]
-numeric_features = [
-    c for c in X.columns
-    if c not in categorical_features + binary_features
-]
+# Gemeinsame Ermittlung der Feature-Gruppen
+num_features, cat_features, bin_features = get_feature_groups(X)
 
 X_train, X_test, y_train, y_test = train_test_split(
     X,
@@ -78,6 +79,7 @@ SCORING = {
 
 
 def evaluate_pipeline(name, pipeline):
+    """Bewertet eine vollstaendige Pipeline per Cross-Validation auf den Trainingsdaten."""
     start = time.time()
     scores = cross_validate(
         pipeline,
@@ -127,25 +129,9 @@ def summarize_cv(scores):
         "Mittlere Fit-Zeit (s)": scores["fit_time"].mean(),
     }
 
-# %% Teil 3: Vorverarbeitungs-Pipeline
-numeric_preparation = Pipeline([
-    ("missing_values", SimpleImputer(strategy="median")),
-])
 
-binary_preparation = Pipeline([
-    ("missing_values", SimpleImputer(strategy="most_frequent")),
-])
-
-categorical_preparation = Pipeline([
-    ("missing_values", SimpleImputer(strategy="constant", fill_value="Missing")),
-    ("one_hot_encoding", OneHotEncoder(handle_unknown="ignore")),
-])
-
-preprocessor = ColumnTransformer([
-    ("numeric", numeric_preparation, numeric_features),
-    ("binary", binary_preparation, binary_features),
-    ("categorical", categorical_preparation, categorical_features),
-])
+# %% Teil 3: Vorverarbeitungs-Pipeline (nutzt zentrales preprocessing-Modul)
+preprocessor = build_preprocessor(num_features, cat_features, bin_features, random_state=RANDOM_STATE)
 
 base_model = RandomForestClassifier(
     n_estimators=50,

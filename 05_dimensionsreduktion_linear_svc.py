@@ -27,20 +27,18 @@
 # Eine dreifache stratifizierte Cross-Validation sorgt auch in den Folds für
 # eine vergleichbare Klassenverteilung.
 #
-# Die Einzelgrafiken werden über Funktionen aus `plotting.py` erzeugt. Der
-# direkte Vergleich der drei Verfahren bleibt als gemeinsamer Matplotlib-Plot
-# in dieser Datei sichtbar. Die Laufzeitprotokollierung ist in `timing.py`
-# ausgelagert.
+# Die Einzelgrafiken werden über Funktionen aus `plotting.py` erzeugt.
+# Die Laufzeitprotokollierung ist in `timing.py` ausgelagert.
 
 # %%
 # GEMEINSAMER BASISBLOCK
 
 import time
+import warnings
 import numpy as np
 import pandas as pd
 
 from sklearn.base import clone
-from sklearn.datasets import fetch_openml
 from sklearn.decomposition import PCA, TruncatedSVD
 from sklearn.feature_selection import SelectKBest, f_classif
 from sklearn.impute import SimpleImputer
@@ -65,31 +63,29 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.svm import LinearSVC
 
+from config import RANDOM_STATE, TEST_SIZE
+from data_loading import load_data
 from plotting import (
     plot_svc_learning_curve,
     plot_selectkbest_results,
     plot_numeric_pca_variance,
     plot_pca_pipeline_scores,
     plot_truncatedsvd_pipeline_scores,
-    plot_dimensionality_reduction_comparison,
 )
+from preprocessing import get_feature_groups
 from timing import log_custom_runtime, measure_runtime
 
-RANDOM_STATE = 42
-TEST_SIZE = 0.20
 N_SPLITS = 3
 
-porto = fetch_openml(data_id=42742, as_frame=True)
+# Zentraler Datenbezug ueber data_loading.py
+df_raw = load_data()
+df_cleaned = df_raw.copy()
 
-X = porto.data.copy().replace(-1, np.nan)
-y = pd.to_numeric(porto.target).astype("int8")
+X = df_cleaned.drop(columns=["target"])
+y = pd.to_numeric(df_cleaned["target"]).astype("int8")
 
-categorical_features = [c for c in X.columns if c.endswith("_cat")]
-binary_features = [c for c in X.columns if c.endswith("_bin")]
-numeric_features = [
-    c for c in X.columns
-    if c not in categorical_features + binary_features
-]
+# Gemeinsame Ermittlung der Feature-Gruppen aus preprocessing.py
+num_features, cat_features, bin_features = get_feature_groups(X)
 
 X_train, X_test, y_train, y_test = train_test_split(
     X,
@@ -114,6 +110,7 @@ SCORING = {
 
 
 def evaluate_pipeline(name, pipeline):
+    """Bewertet eine vollstaendige Pipeline via Cross-Validation auf den Trainingsdaten."""
     start = time.time()
     scores = cross_validate(
         pipeline,
@@ -145,9 +142,28 @@ print("Positive Klasse im Training:", y_train.mean().round(4))
 # stratifizierte Teilstichprobe aus `X_train` gezogen. Dadurch bleibt der Anteil
 # der seltenen positiven Klasse erhalten. `summarize_cv` fasst die verwendeten
 # CV-Metriken für PCA, SelectKBest und TruncatedSVD einheitlich zusammen.
-#
 
 # %%
+warnings.filterwarnings(
+    "ignore",
+    message=".*invalid value encountered in matmul.*",
+    category=RuntimeWarning,
+    module="sklearn.decomposition._base",
+)
+warnings.filterwarnings(
+    "ignore",
+    message=".*divide by zero encountered in matmul.*",
+    category=RuntimeWarning,
+    module="sklearn.decomposition._base",
+)
+warnings.filterwarnings(
+    "ignore",
+    message=".*overflow encountered in matmul.*",
+    category=RuntimeWarning,
+    module="sklearn.decomposition._base",
+)
+
+
 def stratified_subsample(X_data, y_data, n_samples, random_state=RANDOM_STATE):
     if n_samples is None or n_samples >= len(X_data):
         return X_data.copy(), y_data.copy()
@@ -212,9 +228,9 @@ binary_base = Pipeline([
 ])
 
 preprocessor_full = ColumnTransformer([
-    ("numeric", numeric_base, numeric_features),
-    ("categorical", categorical_base, categorical_features),
-    ("binary", binary_base, binary_features),
+    ("numeric", numeric_base, num_features),
+    ("categorical", categorical_base, cat_features),
+    ("binary", binary_base, bin_features),
 ])
 
 base_model = LinearSVC(
@@ -380,7 +396,7 @@ plot_selectkbest_results(select_k_results, n_transformed_features)
 
 # %%
 numeric_probe = clone(numeric_base)
-X_experiment_numeric = X_experiment[numeric_features]
+X_experiment_numeric = X_experiment[num_features]
 
 X_numeric_prepared = numeric_probe.fit_transform(
     X_experiment_numeric,
@@ -437,9 +453,9 @@ for n_components in pca_candidates:
     ])
 
     preprocessor_pca = ColumnTransformer([
-        ("numeric", numeric_pca, numeric_features),
-        ("categorical", clone(categorical_base), categorical_features),
-        ("binary", clone(binary_base), binary_features),
+        ("numeric", numeric_pca, num_features),
+        ("categorical", clone(categorical_base), cat_features),
+        ("binary", clone(binary_base), bin_features),
     ])
 
     pipeline_pca = Pipeline([
@@ -519,16 +535,6 @@ svd_results = pd.DataFrame(svd_results)
 plot_truncatedsvd_pipeline_scores(svd_results, baseline_pr_auc)
 
 # %% [markdown]
-# ### Direkter Vergleich der drei Dimensionsreduktionsverfahren
-#
-# Die gestrichelte Referenzlinie zeigt die mittlere CV-PR-AUC der unreduzierten
-# Pipeline mit allen 227 transformierten Merkmalen. Der orange Punkt markiert
-# in jedem Teilplot die jeweils höchste mittlere CV-PR-AUC.
-
-# %%
-plot_dimensionality_reduction_comparison(select_k_results, pca_results, svd_results, baseline_pr_auc)
-
-# %% [markdown]
 # ### Vergleich und Bewertung der Dimensionsreduktionsverfahren
 #
 # Nach der Vorverarbeitung liegen **227 Merkmale** vor. Die CV-Ergebnisse zeigen:
@@ -547,12 +553,11 @@ plot_dimensionality_reduction_comparison(select_k_results, pca_results, svd_resu
 #
 # ## 7. Variantenauswahl und Hyperparameteroptimierung des LinearSVC
 #
-# Nach dem grafischen Vergleich werden die besten Zeilen von SelectKBest und PCA
+# Nach dem Vergleich werden die besten Zeilen von SelectKBest und PCA
 # anhand der mittleren CV-PR-AUC bestimmt und ihre Dimensionsparameter
 # festgehalten. In der folgenden Optimierung werden nur noch `C` und
 # `class_weight` variiert. Es werden direkt die drei benötigten Tuning-Pipelines
-# definiert. Zusätzliche vollständige Zwischenpipelines wären redundant und
-# werden deshalb nicht angelegt. Auswahl und Optimierung beruhen ausschließlich
+# definiert. Auswahl und Optimierung beruhen ausschließlich
 # auf Trainingsdaten; der Hold-out-Testdatensatz bleibt weiterhin unberührt.
 
 # %%
@@ -579,10 +584,8 @@ print("Beste PCA-Komponentenzahl:", BEST_PCA_COMPONENTS)
 #
 # Derselbe Suchraum wird auf die Baseline, SelectKBest und PCA angewendet. Die
 # Auswahl erfolgt nach mittlerer CV-PR-AUC auf `X_experiment`; ROC-AUC, Balanced
-# Accuracy und F1 werden zur Einordnung mitgeführt. TruncatedSVD wird aufgrund
-# der vorherigen Ergebnisse nicht weiter optimiert. Bei 12 Kombinationen je
-# Pipeline, drei Pipelines und dreifacher CV umfasst die Suche insgesamt 108
-# Fits.
+# Accuracy und F1 werden zur Einordnung mitgeführt. Bei 12 Kombinationen je
+# Pipeline, drei Pipelines und dreifacher CV umfasst die Suche insgesamt 108 Fits.
 
 # %%
 MODEL_PARAM_GRID = {
@@ -606,9 +609,9 @@ numeric_pca_best = Pipeline([
 ])
 
 preprocessor_pca_best = ColumnTransformer([
-    ("numeric", numeric_pca_best, numeric_features),
-    ("categorical", clone(categorical_base), categorical_features),
-    ("binary", clone(binary_base), binary_features),
+    ("numeric", numeric_pca_best, num_features),
+    ("categorical", clone(categorical_base), cat_features),
+    ("binary", clone(binary_base), bin_features),
 ])
 
 pipeline_baseline_tuning = Pipeline([
@@ -825,8 +828,6 @@ print(final_test_results.round({
 # Die Tabellen `learning_curve_results`, `pca_results`, `select_k_results`,
 # `svd_results` und `tuning_results` dokumentieren zusätzlich die Entscheidungen
 # zur Trainingsmenge, Dimensionsreduktion und Hyperparameterwahl.
-
-# %%
 
 
 def main():

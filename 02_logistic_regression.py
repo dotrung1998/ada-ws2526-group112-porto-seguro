@@ -1,6 +1,13 @@
 """
 02_logistic_regression.py
 Modellierung: Logistische Regression (Finales Modell).
+
+Dieses Skript nutzt die gemeinsamen Projektmodule:
+- data_loading: Datenbezug von OpenML
+- preprocessing: Identifikation der Feature-Typen und ColumnTransformer-Aufbau
+- splitting: Einheitlicher, stratifizierter Train-Test-Split
+- plotting: Export von Koeffizienten- und Diagnose-Plots
+- timing: Laufzeitmessung und Protokollierung
 """
 
 import os
@@ -13,8 +20,6 @@ warnings.filterwarnings("ignore")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn.compose import ColumnTransformer
-from sklearn.datasets import fetch_openml
 from sklearn.decomposition import PCA
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
@@ -37,37 +42,36 @@ from sklearn.model_selection import (
     train_test_split,
 )
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import StandardScaler
 
+from config import RANDOM_STATE, TEST_SIZE
+from data_loading import load_data
 from plotting import (
-    plot_pca_variance,
     plot_logreg_coefficients,
     save_current_figure,
 )
+from preprocessing import build_preprocessor, get_feature_groups
 from timing import log_custom_runtime, measure_runtime
 
 np.seterr(all="ignore")
 
-RANDOM_STATE = 42
-TEST_SIZE = 0.20
 N_SPLITS = 3
 
 # %% Teil 1: Gemeinsame Datenbasis & Basisblock
-porto = fetch_openml(data_id=42742, as_frame=True)
+# Datenbezug ueber das zentrale Datenlademodul
+df_raw = load_data()
+df_cleaned = df_raw.copy()
 
-X = porto.data.copy().replace(-1, np.nan)
-y = pd.to_numeric(porto.target).astype("int8")
+# Gemeinsame Feature-Gruppierung und Preprocessing-Definition
+X = df_cleaned.drop(columns=["target"])
+y = pd.to_numeric(df_cleaned["target"]).astype("int8")
 
-categorical_features = [c for c in X.columns if c.endswith("_cat")]
-binary_features = [c for c in X.columns if c.endswith("_bin")]
-numeric_features = [
-    c for c in X.columns
-    if c not in categorical_features + binary_features
-]
+num_features, cat_features, bin_features = get_feature_groups(X)
 
-for col in numeric_features + binary_features:
+for col in num_features + bin_features:
     X[col] = pd.to_numeric(X[col], errors="coerce").astype(np.float64)
 
+# Einheitlicher stratifizierter Train-Test-Split
 X_train, X_test, y_train, y_test = train_test_split(
     X,
     y,
@@ -91,7 +95,7 @@ SCORING = {
 
 
 def evaluate_pipeline(name, pipeline):
-    """Bewertet eine vollständige Pipeline nur auf den Trainingsdaten."""
+    """Bewertet eine vollständige Pipeline nur auf den Trainingsdaten via Cross-Validation."""
     start = time.time()
     scores = cross_validate(
         pipeline,
@@ -115,7 +119,7 @@ def evaluate_pipeline(name, pipeline):
 print("Trainingsdaten:", X_train.shape)
 print("Testdaten:", X_test.shape)
 print("Positive Klasse im Training:", round(y_train.mean(), 4))
-print(f"Anzahl Merkmale: {len(numeric_features)} numerisch, {len(categorical_features)} kategorial, {len(binary_features)} binär")
+print(f"Anzahl Merkmale: {len(num_features)} numerisch, {len(cat_features)} kategorial, {len(bin_features)} binär")
 
 # %% Teil 2: Hilfsfunktionen
 def summarize_cv(scores):
@@ -141,26 +145,9 @@ def stratified_subsample(X_data, y_data, n_samples, random_state=RANDOM_STATE):
     )
     return X_sub, y_sub
 
-# %% Teil 3: Vorverarbeitungs-Pipeline
-numeric_transformer = Pipeline(steps=[
-    ("imputer", SimpleImputer(strategy="median")),
-    ("scaler", StandardScaler()),
-])
 
-categorical_transformer = Pipeline(steps=[
-    ("imputer", SimpleImputer(strategy="constant", fill_value="Missing")),
-    ("encoder", OneHotEncoder(handle_unknown="ignore")),
-])
-
-binary_transformer = Pipeline(steps=[
-    ("imputer", SimpleImputer(strategy="most_frequent")),
-])
-
-preprocessor = ColumnTransformer(transformers=[
-    ("numeric", numeric_transformer, numeric_features),
-    ("categorical", categorical_transformer, categorical_features),
-    ("binary", binary_transformer, binary_features),
-])
+# %% Teil 3: Vorverarbeitungs-Pipeline (nutzt preprocessing.py)
+preprocessor = build_preprocessor(num_features, cat_features, bin_features, random_state=RANDOM_STATE)
 
 # %% Teil 4: Prüfung der Dimensionsreduktion (PCA)
 numeric_pca = Pipeline(steps=[
@@ -169,10 +156,21 @@ numeric_pca = Pipeline(steps=[
     ("pca", PCA(n_components=18, svd_solver="arpack", random_state=RANDOM_STATE)),
 ])
 
+# Aufbau des alternativen Preprocessors mit PCA fuer den numerischen Block
+from sklearn.compose import ColumnTransformer
+
+categorical_transformer = Pipeline(steps=[
+    ("imputer", SimpleImputer(strategy="constant", fill_value="Missing")),
+    ("encoder", preprocessor.transformers[1][1].named_steps["onehotencoder"]),
+])
+binary_transformer = Pipeline(steps=[
+    ("imputer", SimpleImputer(strategy="most_frequent")),
+])
+
 preprocessor_with_pca = ColumnTransformer(transformers=[
-    ("numeric", numeric_pca, numeric_features),
-    ("categorical", categorical_transformer, categorical_features),
-    ("binary", binary_transformer, binary_features),
+    ("numeric", numeric_pca, num_features),
+    ("categorical", categorical_transformer, cat_features),
+    ("binary", binary_transformer, bin_features),
 ])
 
 pipe_no_pca = Pipeline(steps=[
@@ -242,7 +240,7 @@ print(f"Beste CV PR-AUC: {grid_search_lr.best_score_:.6f}")
 best_lr_model = grid_search_lr.best_estimator_
 
 # %% Teil 7: Interpretation der Modellkoeffizienten
-plot_logreg_coefficients(best_lr_model, numeric_features, categorical_features, binary_features)
+plot_logreg_coefficients(best_lr_model, num_features, cat_features, bin_features)
 
 # %% Teil 8: Finales Modell & Schwellenwert-Analyse
 final_pipeline = best_lr_model

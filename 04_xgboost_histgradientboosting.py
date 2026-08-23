@@ -1,6 +1,13 @@
 """
 04_xgboost_histgradientboosting.py
 Vergleicht XGBoost und HistGradientBoosting auf dem Porto-Seguro-Datensatz.
+
+Dieses Skript nutzt die gemeinsamen Projektmodule:
+- data_loading: Zentraler Datenbezug ueber OpenML
+- preprocessing: Zentrale Feature-Gruppierung (get_feature_groups)
+- config: Einheitliche Konfiguration (RANDOM_STATE, TEST_SIZE)
+- plotting: Speichern von Visualisierungen
+- timing: Laufzeitmessung und Protokollierung
 """
 
 import time
@@ -11,15 +18,11 @@ import numpy as np
 import pandas as pd
 
 from sklearn.compose import ColumnTransformer
-from sklearn.datasets import fetch_openml
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import (
-    PrecisionRecallDisplay,
-    RocCurveDisplay,
     average_precision_score,
     balanced_accuracy_score,
-    classification_report,
     confusion_matrix,
     f1_score,
     precision_score,
@@ -35,7 +38,10 @@ from sklearn.model_selection import (
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder, StandardScaler
 
+from config import RANDOM_STATE, TEST_SIZE
+from data_loading import load_data
 from plotting import save_current_figure
+from preprocessing import get_feature_groups
 from timing import log_custom_runtime, measure_runtime
 
 warnings.filterwarnings("ignore")
@@ -48,22 +54,18 @@ except Exception as exc:
     HAS_XGBOOST = False
     print(f"XGBoost ist in dieser Umgebung nicht verfuegbar und wird uebersprungen: {exc}")
 
-RANDOM_STATE = 42
-TEST_SIZE = 0.20
 N_SPLITS = 3
 
 # %% Teil 1: Gemeinsame Datenbasis
-porto = fetch_openml(data_id=42742, as_frame=True)
+# Zentraler Datenbezug
+df_raw = load_data()
+df_cleaned = df_raw.copy()
 
-X = porto.data.copy().replace(-1, np.nan)
-y = pd.to_numeric(porto.target).astype("int8")
+X = df_cleaned.drop(columns=["target"])
+y = pd.to_numeric(df_cleaned["target"]).astype("int8")
 
-categorical_features = [c for c in X.columns if c.endswith("_cat")]
-binary_features = [c for c in X.columns if c.endswith("_bin")]
-numeric_features = [
-    c for c in X.columns
-    if c not in categorical_features + binary_features
-]
+# Gemeinsame Feature-Gruppierung
+num_features, cat_features, bin_features = get_feature_groups(X)
 
 X_train, X_test, y_train, y_test = train_test_split(
     X,
@@ -84,6 +86,7 @@ SCORING = {
 
 
 def evaluate_pipeline(name, pipeline):
+    """Bewertet eine vollstaendige Boosting-Pipeline via Cross-Validation auf den Trainingsdaten."""
     start = time.time()
     scores = cross_validate(
         pipeline,
@@ -124,9 +127,9 @@ bin_transformer_xgb = Pipeline(steps=[
 ])
 
 preprocessor_xgb = ColumnTransformer(transformers=[
-    ("num", num_transformer_xgb, numeric_features),
-    ("cat", cat_transformer_xgb, categorical_features),
-    ("bin", bin_transformer_xgb, binary_features),
+    ("num", num_transformer_xgb, num_features),
+    ("cat", cat_transformer_xgb, cat_features),
+    ("bin", bin_transformer_xgb, bin_features),
 ])
 
 cat_transformer_hgb = OrdinalEncoder(
@@ -134,15 +137,15 @@ cat_transformer_hgb = OrdinalEncoder(
 )
 
 preprocessor_hgb = ColumnTransformer(transformers=[
-    ("num", "passthrough", numeric_features),
-    ("cat", cat_transformer_hgb, categorical_features),
-    ("bin", "passthrough", binary_features),
+    ("num", "passthrough", num_features),
+    ("cat", cat_transformer_hgb, cat_features),
+    ("bin", "passthrough", bin_features),
 ])
 
 categorical_mask = (
-    [False] * len(numeric_features)
-    + [True] * len(categorical_features)
-    + [False] * len(binary_features)
+    [False] * len(num_features)
+    + [True] * len(cat_features)
+    + [False] * len(bin_features)
 )
 
 # %% Teil 4: XGBoost
