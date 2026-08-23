@@ -1,5 +1,5 @@
 # %% [markdown]
-# # Teil 3 – LinearSVC, Learning Curve und Dimensionsreduktion
+# # LinearSVC, Learning Curve und Dimensionsreduktion
 #
 # Dieses Skript bearbeitet im Rahmen der Arbeitsteilung den Schwerpunkt
 # **Datenvorverarbeitung und Dimensionsreduktion** mit einem linearen
@@ -18,22 +18,16 @@
 # Accuracy: Die Metrik konzentriert sich auf die Erkennung der seltenen
 # positiven Fälle und berücksichtigt dabei sowohl Precision als auch Recall.
 #
-# ## Gemeinsamer Basisblock
-#
-# Der Porto-Seguro-Datensatz wird geladen und der Missing-Value-Code `-1` durch
-# `NaN` ersetzt. Danach werden kategoriale, binäre und numerische Merkmale anhand
-# ihrer Namensendungen getrennt. Der stratifizierte 80/20-Split erzeugt einen
-# Trainings- und einen bis zur finalen Bewertung unberührten Testdatensatz.
-# Eine dreifache stratifizierte Cross-Validation sorgt auch in den Folds für
-# eine vergleichbare Klassenverteilung.
-#
 # Die Einzelgrafiken werden über Funktionen aus `plotting.py` erzeugt. Der
 # direkte Vergleich der drei Verfahren bleibt als gemeinsamer Matplotlib-Plot
 # in dieser Datei sichtbar. Die Laufzeitprotokollierung ist in `timing.py`
 # ausgelagert.
 
 # %%
-# GEMEINSAMER BASISBLOCK
+"""
+05_dimensionsreduktion_linear_svc.py
+Durchführt Dimensionsreduktion und trainiert einen LinearSVC auf dem Porto-Seguro-Datensatz.
+"""
 
 import time
 import numpy as np
@@ -79,6 +73,17 @@ RANDOM_STATE = 42
 TEST_SIZE = 0.20
 N_SPLITS = 3
 
+# %% [markdown]
+# ## 1. Gemeinsamer Basisblock
+#
+# Der Porto-Seguro-Datensatz wird geladen und der Missing-Value-Code `-1` durch
+# `NaN` ersetzt. Danach werden kategoriale, binäre und numerische Merkmale anhand
+# ihrer Namensendungen getrennt. Der stratifizierte 80/20-Split erzeugt einen
+# Trainings- und einen bis zur finalen Bewertung unberührten Testdatensatz.
+# Eine dreifache stratifizierte Cross-Validation sorgt auch in den Folds für
+# eine vergleichbare Klassenverteilung.
+
+# %%
 porto = fetch_openml(data_id=42742, as_frame=True)
 
 X = porto.data.copy().replace(-1, np.nan)
@@ -139,7 +144,7 @@ print("Testdaten:", X_test.shape)
 print("Positive Klasse im Training:", y_train.mean().round(4))
 
 # %% [markdown]
-# ## 1. Zusätzliche Hilfsfunktionen
+# ## 2. Zusätzliche Hilfsfunktionen
 #
 # Für die rechenintensiven Experimente wird später eine reproduzierbare,
 # stratifizierte Teilstichprobe aus `X_train` gezogen. Dadurch bleibt der Anteil
@@ -174,7 +179,7 @@ def summarize_cv(scores):
 
 
 # %% [markdown]
-# ## 2. Modellgerechte Vorverarbeitung für LinearSVC
+# ## 3. Modellgerechte Vorverarbeitung für LinearSVC
 #
 # Die drei Merkmalsgruppen werden unterschiedlich verarbeitet:
 #
@@ -230,7 +235,7 @@ pipeline_baseline = Pipeline([
 ])
 
 # %% [markdown]
-# ## 3. Learning Curve
+# ## 4. Learning Curve
 #
 # Die Baseline-Pipeline ohne Dimensionsreduktion wird mit wachsenden
 # Trainingsmengen untersucht. Maßgeblich ist die CV-PR-AUC; die Trainingskurve
@@ -302,7 +307,7 @@ print("Experimentelle Trainingsmenge:", X_experiment.shape)
 print("Anteil positive Klasse:", round(y_experiment.mean(), 4))
 
 # %% [markdown]
-# ## 4. Dimensionsreduktion mit SelectKBest
+# ## 5. Dimensionsreduktion mit SelectKBest
 #
 # `SelectKBest(f_classif)` bewertet jedes nach der vollständigen Vorverarbeitung
 # entstandene Merkmal einzeln anhand seines Zusammenhangs mit der Zielvariable.
@@ -364,7 +369,7 @@ plot_selectkbest_results(select_k_results, n_transformed_features)
 # Modellleistung zu verschlechtern; in diesem Vergleich verbessert sie die
 # Hauptmetrik sogar leicht.
 #
-# ## 5. Dimensionsreduktion mit PCA im numerischen Block
+# ## 6. Dimensionsreduktion mit PCA im numerischen Block
 #
 # PCA ist ein unüberwachtes Verfahren: Es maximiert die erklärte Varianz, nicht
 # unmittelbar die Trennleistung der Zielklassen. Deshalb wird zunächst geprüft,
@@ -471,7 +476,7 @@ baseline_pr_auc = plot_k.loc[plot_k["k"] == n_transformed_features, "PR-AUC"].il
 plot_pca_pipeline_scores(pca_results, baseline_pr_auc)
 
 # %% [markdown]
-# ## 6. TruncatedSVD
+# ## 7. TruncatedSVD
 #
 # `TruncatedSVD` kann im Unterschied zur hier verwendeten klassischen PCA direkt
 # auf der vollständigen sparse transformierten Matrix arbeiten. Numerische,
@@ -545,7 +550,7 @@ plot_dimensionality_reduction_comparison(select_k_results, pca_results, svd_resu
 # 2. `LinearSVC` mit SelectKBest,
 # 3. `LinearSVC` mit PCA.
 #
-# ## 7. Variantenauswahl und Hyperparameteroptimierung des LinearSVC
+# ## 8. Variantenauswahl und Hyperparameteroptimierung des LinearSVC
 #
 # Nach dem grafischen Vergleich werden die besten Zeilen von SelectKBest und PCA
 # anhand der mittleren CV-PR-AUC bestimmt und ihre Dimensionsparameter
@@ -732,7 +737,7 @@ print(
 )
 
 # %% [markdown]
-# ## 8. Finale Bewertung auf dem Hold-out-Testdatensatz
+# ## 9. Finale Bewertung auf dem Hold-out-Testdatensatz
 #
 # Erst nach Abschluss von Learning Curve, Dimensionsreduktion und
 # Hyperparameteroptimierung wird die ausgewählte Pipeline auf dem vollständigen
@@ -792,16 +797,7 @@ final_test_results = pd.DataFrame([{
 }])
 
 print("\n=== FINALE ERGEBNISTABELLE (LINEAR SVC) ===")
-print(final_test_results.round({
-    "Test PR-AUC": 6,
-    "Test ROC-AUC": 6,
-    "Test Balanced Accuracy": 6,
-    "Test F1": 6,
-    "Test Precision": 6,
-    "Test Recall": 6,
-    "Trainingszeit gesamt (s)": 2,
-    "Vorhersagezeit Test (s)": 2,
-}))
+print(final_test_results)
 
 # %% [markdown]
 # ### Interpretation und Weitergabe an die Gruppe
