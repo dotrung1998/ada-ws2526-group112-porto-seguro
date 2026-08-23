@@ -303,6 +303,80 @@ def plot_truncatedsvd_pipeline_scores(svd_results: pd.DataFrame, baseline_pr_auc
     _savefig("06_truncatedsvd_pr_auc.png", subdir=subdir)
     plt.close()
 
+def plot_dimensionality_reduction_comparison(
+    select_k_results: pd.DataFrame,
+    pca_results: pd.DataFrame,
+    svd_results: pd.DataFrame,
+    baseline_pr_auc: float,
+    subdir: str = "05_dimensionsreduktion_linear_svc",
+) -> None:
+    """Vergleicht SelectKBest, PCA und TruncatedSVD in drei Teilplots."""
+    _, axes = plt.subplots(1, 3, figsize=(14, 4.2), sharey=True)
+
+    comparisons = [
+        (
+            axes[0],
+            select_k_results.sort_values("k"),
+            "k",
+            "SelectKBest",
+            "Beibehaltene Merkmale",
+        ),
+        (
+            axes[1],
+            pca_results.sort_values("PCA-Komponenten"),
+            "PCA-Komponenten",
+            "PCA (numerischer Block)",
+            "Komponenten",
+        ),
+        (
+            axes[2],
+            svd_results.sort_values("SVD-Komponenten"),
+            "SVD-Komponenten",
+            "TruncatedSVD",
+            "Komponenten",
+        ),
+    ]
+
+    for ax, results, x_column, title, x_label in comparisons:
+        ax.plot(
+            results[x_column],
+            results["PR-AUC"],
+            marker="o",
+            linewidth=2,
+        )
+
+        best_row = results.loc[results["PR-AUC"].idxmax()]
+        ax.scatter(
+            best_row[x_column],
+            best_row["PR-AUC"],
+            color="orange",
+            s=80,
+            zorder=3,
+        )
+
+        ax.axhline(
+            baseline_pr_auc,
+            linestyle="--",
+            linewidth=1.4,
+        )
+        ax.set_title(title)
+        ax.set_xlabel(x_label)
+        ax.grid(alpha=0.25)
+
+    axes[0].set_ylabel("CV PR-AUC")
+    axes[2].plot(
+        [],
+        [],
+        color="tab:blue",
+        linestyle="--",
+        label="Alle Merkmale",
+    )
+    axes[2].legend(frameon=False, loc="lower right")
+
+    plt.tight_layout()
+    _savefig("07_dimensionality_reduction_comparison.png", subdir=subdir)
+    plt.close()
+
 
 # ==========================================
 # 4. GESAMTAUSWERTUNG (06_gesamtauswertung_und_ergebnisse.py)
