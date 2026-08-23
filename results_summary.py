@@ -8,74 +8,7 @@ vorne lueckenlos nebeneinander stehen und keine optischen Luecken durch
 modellspezifische Parameter entstehen.
 """
 
-import time
-from typing import Any, Dict, Optional
-
-import numpy as np
 import pandas as pd
-from sklearn.metrics import (
-    average_precision_score,
-    balanced_accuracy_score,
-    confusion_matrix,
-    f1_score,
-    precision_score,
-    recall_score,
-    roc_auc_score,
-)
-
-
-def _get_continuous_scores(pipeline, X_test):
-    """Liefert kontinuierliche Vorhersagewerte (predict_proba oder decision_function)."""
-    if hasattr(pipeline, "predict_proba"):
-        return pipeline.predict_proba(X_test)[:, 1]
-    if hasattr(pipeline, "decision_function"):
-        return pipeline.decision_function(X_test)
-    raise AttributeError("Modell besitzt weder predict_proba noch decision_function.")
-
-
-def build_final_test_results(
-    pipeline,
-    model_name: str,
-    X_test,
-    y_test,
-    fit_time: Optional[float] = None,
-    cv_roc_auc: Optional[float] = None,
-    best_params: Optional[Dict[str, Any]] = None,
-    preprocessing_desc: Optional[str] = None,
-    extra_columns: Optional[Dict[str, Any]] = None,
-) -> pd.DataFrame:
-    """Erstellt eine einzeilige Ergebnistabelle fuer ein bereits trainiertes Modell."""
-    predict_start = time.time()
-    y_test_pred = pipeline.predict(X_test)
-    y_test_score = _get_continuous_scores(pipeline, X_test)
-    predict_time = time.time() - predict_start
-
-    tn, fp, fn, tp = confusion_matrix(y_test, y_test_pred).ravel()
-
-    row = {
-        "Modell": model_name,
-        "Test PR-AUC": average_precision_score(y_test, y_test_score),
-        "Test ROC-AUC": roc_auc_score(y_test, y_test_score),
-        "Test Balanced Accuracy": balanced_accuracy_score(y_test, y_test_pred),
-        "Test F1": f1_score(y_test, y_test_pred, zero_division=0),
-        "Test Precision": precision_score(y_test, y_test_pred, zero_division=0),
-        "Test Recall": recall_score(y_test, y_test_pred, zero_division=0),
-        "True Negatives": tn,
-        "False Positives": fp,
-        "False Negatives": fn,
-        "True Positives": tp,
-        "Trainingszeit gesamt (s)": fit_time if fit_time is not None else np.nan,
-        "Vorhersagezeit Test (s)": predict_time,
-        "CV ROC-AUC": cv_roc_auc if cv_roc_auc is not None else np.nan,
-        "Vorverarbeitung": preprocessing_desc if preprocessing_desc else "",
-        "Beste Hyperparameter": str(best_params) if best_params else "",
-    }
-
-    if extra_columns:
-        row.update(extra_columns)
-
-    return pd.DataFrame([row])
-
 
 def standardize_columns(df: pd.DataFrame) -> pd.DataFrame:
     """Standardisiert abweichende Spaltennamen der verschiedenen Modellskripte."""
