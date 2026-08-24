@@ -28,7 +28,6 @@ Durchfuehrt Dimensionsreduktion und trainiert einen LinearSVC auf dem Porto-Segu
 """
 
 import time
-import warnings
 import numpy as np
 import pandas as pd
 
@@ -149,26 +148,6 @@ print("Positive Klasse im Training:", y_train.mean().round(4))
 # stratifizierte Teilstichprobe aus `X_train` gezogen. Dadurch bleibt der Anteil
 # der seltenen positiven Klasse erhalten. `summarize_cv` fasst die verwendeten
 # CV-Metriken für PCA, SelectKBest und TruncatedSVD einheitlich zusammen.
-
-# %%
-warnings.filterwarnings(
-    "ignore",
-    message=".*invalid value encountered in matmul.*",
-    category=RuntimeWarning,
-    module="sklearn.decomposition._base",
-)
-warnings.filterwarnings(
-    "ignore",
-    message=".*divide by zero encountered in matmul.*",
-    category=RuntimeWarning,
-    module="sklearn.decomposition._base",
-)
-warnings.filterwarnings(
-    "ignore",
-    message=".*overflow encountered in matmul.*",
-    category=RuntimeWarning,
-    module="sklearn.decomposition._base",
-)
 
 
 def stratified_subsample(X_data, y_data, n_samples, random_state=RANDOM_STATE):
