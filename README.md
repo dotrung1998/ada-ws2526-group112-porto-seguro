@@ -11,7 +11,7 @@ Das Projekt beinhaltet explorative Datenanalyse (EDA), standardisiertes Preproce
 2. [Projekt- & Ordnerstruktur](#-projekt--ordnerstruktur)
 3. [Voraussetzungen](#-voraussetzungen)
 4. [Schnellstart & Installation](#-schnellstart--installation)
-   - [Option A: GitHub Codespaces (Empfohlen – 1-Klick)](#option-a-github-codespaces-browserbasiert)
+   - [Option A: GitHub Codespaces (Browserbasiert)](#option-a-github-codespaces-browserbasiert)
    - [Option B: macOS / Linux (Terminal)](#option-b-macos--linux-terminal)
    - [Option C: Windows (PowerShell / CMD)](#option-c-windows-powershell--cmd)
 5. [Pipeline-Ausführung (Empfohlener Ablauf)](#-pipeline-ausführung-empfohlener-ablauf)
@@ -47,9 +47,8 @@ Aufgrund des starken Klassenungleichgewichts (ca. 3,6 % Schadensfälle) setzt di
 ├── config.py                                # Zentrale Pfad- & Hyperparameter-Konfiguration
 ├── data_loading.py                          # Automatischer OpenML-Download & CSV-Export
 ├── preprocessing.py                         # Reusable ColumnTransformer & Feature-Gruppierung
-├── splitting.py                             # Stratifizierte Train/Test-Split-Logik
-├── evaluation.py                            # Metrik-Berechnung & Reporting-Funktionen
 ├── plotting.py                              # Visualisierungsmodule (PNG-Export)
+├── results_summary.py                       # Tabellen-Standardisierung & Zusammenführung
 ├── timing.py                                # Automatisches Runtime-Logging
 ├── requirements.txt                         # Python-Abhängigkeiten
 └── output/                                  # Automatisch generierte Ergebnisse
