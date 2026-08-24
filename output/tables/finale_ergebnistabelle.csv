@@ -1,6 +1,5 @@
 Modell,class_weight,Test PR-AUC,Test ROC-AUC,Test Balanced Accuracy,Test F1,Test Precision,Test Recall,True Negatives,False Positives,False Negatives,True Positives,Trainingszeit gesamt (s),Vorhersagezeit Test (s),C,Threshold,n_estimators,max_depth,min_samples_split,min_samples_leaf,max_features,learning_rate,max_leaf_nodes,l2_regularization,SelectKBest k,PCA-Komponenten,Datengrundlage
-"Logistische Regression (optimiert, T=0.65)",balanced,0.064204,0.631116,0.547542,0.109055,0.081105,0.166398,106524,8180,3617,722,4.25,0.49,1.0,,,,,,,,,,,,
-Random Forest (Baseline/Optimiert),balanced,0.060355,0.624602,0.586579,0.101576,0.057063,0.461858,81589,33115,2335,2004,12.75,0.52,,0.5,50.0,10.0,2.0,1.0,sqrt,,,,,,Testdaten
-XGBoost (optimiert),scale_pos_weight=26.4,0.065708,0.640218,0.599248,0.101313,0.055776,0.551971,74159,40545,1944,2395,67.01,1.43,,,300.0,4.0,,,,0.05,,,,,
-HistGradientBoosting (optimiert),balanced,0.063172,0.632395,0.59524,0.099157,0.054437,0.555428,72843,41861,1929,2410,127.2,2.37,,,100.0,,,100.0,,0.05,15.0,0.1,,,
-SelectKBest (k=80),"{0: 1, 1: 10}",0.064918,0.631575,0.516531,0.066172,0.123659,0.045172,113315,1389,4143,196,8.36,0.7,0.1,,,,,,,,,,80.0,,
+"Logistische Regression (optimiert, T=0.65)",balanced,0.064204,0.631116,0.547542,0.109055,0.081105,0.166398,106524,8180,3617,722,4.14,0.46,1.0,,,,,,,,,,,,
+Random Forest (Baseline/Optimiert),balanced,0.06177,0.626286,0.586486,0.101129,0.056712,0.466467,81039,33665,2315,2024,10.63,0.47,,0.5,50.0,10.0,2.0,1.0,sqrt,,,,,,Testdaten
+HistGradientBoosting (optimiert),balanced,0.063172,0.632395,0.59524,0.099157,0.054437,0.555428,72843,41861,1929,2410,109.85,1.77,,,100.0,,,100.0,,0.05,15.0,0.1,,,
+SelectKBest (k=80),"{0: 1, 1: 10}",0.064918,0.631575,0.516531,0.066172,0.123659,0.045172,113315,1389,4143,196,8.38,0.72,0.1,,,,,,,,,,80.0,,

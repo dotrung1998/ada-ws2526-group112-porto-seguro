@@ -118,26 +118,6 @@ def plot_correlation_heatmap(df_cleaned: pd.DataFrame, target_col: str = "target
 # 2. LOGISTISCHE REGRESSION (02_logistic_regression.py)
 # ==========================================
 
-def plot_pca_variance(explained_var_cumsum: np.ndarray) -> int:
-    """Abbildung: Erklaerte Varianz je Anzahl Hauptkomponenten (PCA)."""
-    plt.figure(figsize=(7, 5))
-    plt.plot(range(1, len(explained_var_cumsum) + 1), explained_var_cumsum, marker="o")
-    plt.axhline(0.95, color="red", linestyle="--", label="95% erklaerte Varianz")
-    plt.xlabel("Anzahl Hauptkomponenten")
-    plt.ylabel("Kumulierte erklaerte Varianz")
-    plt.title("PCA: Erklaerte Varianz je Anzahl Komponenten")
-    plt.legend()
-    plt.grid(True)
-    plt.tight_layout()
-    _savefig("01_pca_varianz.png", subdir="02_logistic_regression")
-    plt.close()
-
-    n_components_95 = int(np.argmax(explained_var_cumsum >= 0.95) + 1)
-    print(f"Anzahl Komponenten fuer 95% erklaerte Varianz: {n_components_95} "
-          f"von {len(explained_var_cumsum)} Features")
-    return n_components_95
-
-
 def plot_logreg_coefficients(best_logreg, num_features, cat_features, bin_features) -> pd.DataFrame:
     """Abbildung: Top 15 einflussreichste Merkmale der optimierten Logistischen Regression."""
     try:
@@ -148,7 +128,11 @@ def plot_logreg_coefficients(best_logreg, num_features, cat_features, bin_featur
         except Exception:
             feature_names = np.array(num_features + cat_features + bin_features)
 
-    coefficients = best_logreg.named_steps["logisticregression"].coef_[0] if "logisticregression" in best_logreg.named_steps else best_logreg.named_steps["model"].coef_[0]
+    coefficients = (
+        best_logreg.named_steps["logisticregression"].coef_[0]
+        if "logisticregression" in best_logreg.named_steps
+        else best_logreg.named_steps["model"].coef_[0]
+    )
     coef_df = pd.DataFrame({"Feature": feature_names, "Koeffizient": coefficients})
     coef_df["AbsKoeffizient"] = coef_df["Koeffizient"].abs()
     coef_df = coef_df.sort_values("AbsKoeffizient", ascending=False).head(15)
@@ -303,80 +287,6 @@ def plot_truncatedsvd_pipeline_scores(svd_results: pd.DataFrame, baseline_pr_auc
     _savefig("06_truncatedsvd_pr_auc.png", subdir=subdir)
     plt.close()
 
-def plot_dimensionality_reduction_comparison(
-    select_k_results: pd.DataFrame,
-    pca_results: pd.DataFrame,
-    svd_results: pd.DataFrame,
-    baseline_pr_auc: float,
-    subdir: str = "05_dimensionsreduktion_linear_svc",
-) -> None:
-    """Vergleicht SelectKBest, PCA und TruncatedSVD in drei Teilplots."""
-    _, axes = plt.subplots(1, 3, figsize=(14, 4.2), sharey=True)
-
-    comparisons = [
-        (
-            axes[0],
-            select_k_results.sort_values("k"),
-            "k",
-            "SelectKBest",
-            "Beibehaltene Merkmale",
-        ),
-        (
-            axes[1],
-            pca_results.sort_values("PCA-Komponenten"),
-            "PCA-Komponenten",
-            "PCA (numerischer Block)",
-            "Komponenten",
-        ),
-        (
-            axes[2],
-            svd_results.sort_values("SVD-Komponenten"),
-            "SVD-Komponenten",
-            "TruncatedSVD",
-            "Komponenten",
-        ),
-    ]
-
-    for ax, results, x_column, title, x_label in comparisons:
-        ax.plot(
-            results[x_column],
-            results["PR-AUC"],
-            marker="o",
-            linewidth=2,
-        )
-
-        best_row = results.loc[results["PR-AUC"].idxmax()]
-        ax.scatter(
-            best_row[x_column],
-            best_row["PR-AUC"],
-            color="orange",
-            s=80,
-            zorder=3,
-        )
-
-        ax.axhline(
-            baseline_pr_auc,
-            linestyle="--",
-            linewidth=1.4,
-        )
-        ax.set_title(title)
-        ax.set_xlabel(x_label)
-        ax.grid(alpha=0.25)
-
-    axes[0].set_ylabel("CV PR-AUC")
-    axes[2].plot(
-        [],
-        [],
-        color="tab:blue",
-        linestyle="--",
-        label="Alle Merkmale",
-    )
-    axes[2].legend(frameon=False, loc="lower right")
-
-    plt.tight_layout()
-    _savefig("07_dimensionality_reduction_comparison.png", subdir=subdir)
-    plt.close()
-
 
 # ==========================================
 # 4. GESAMTAUSWERTUNG (06_gesamtauswertung_und_ergebnisse.py)
@@ -427,9 +337,13 @@ def plot_model_comparison(results: pd.DataFrame) -> None:
                 ax.annotate(
                     f"{height:.3f}",
                     (p.get_x() + p.get_width() / 2.0, height),
-                    ha="center", va="bottom",
-                    xytext=(0, 4), textcoords="offset points",
-                    fontsize=8, fontweight="bold", rotation=0,
+                    ha="center",
+                    va="bottom",
+                    xytext=(0, 4),
+                    textcoords="offset points",
+                    fontsize=8,
+                    fontweight="bold",
+                    rotation=0,
                 )
 
     _annotate(ax1)
