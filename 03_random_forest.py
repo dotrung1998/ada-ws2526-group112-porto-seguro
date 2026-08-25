@@ -3,6 +3,7 @@
 Modellierung: Random Forest (Finales Modell).
 """
 
+import os
 import time
 import warnings
 
@@ -33,6 +34,7 @@ from sklearn.model_selection import (
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
 
+from config import ensure_output_dirs, get_table_path
 from plotting import save_current_figure
 from timing import log_custom_runtime, measure_runtime
 
@@ -41,6 +43,9 @@ warnings.filterwarnings("ignore")
 RANDOM_STATE = 42
 TEST_SIZE = 0.20
 N_SPLITS = 3
+
+_rt_cm = measure_runtime("03_random_forest")
+_rt_cm.__enter__()
 
 # %% Teil 1: Gemeinsame Datenbasis & Basisblock
 porto = fetch_openml(data_id=42742, as_frame=True)
@@ -115,17 +120,6 @@ def stratified_subsample(X_data, y_data, n_samples, random_state=RANDOM_STATE):
         stratify=y_data,
     )
     return X_sub, y_sub
-
-
-def summarize_cv(scores):
-    return {
-        "PR-AUC": scores["test_pr_auc"].mean(),
-        "PR-AUC Std": scores["test_pr_auc"].std(),
-        "ROC-AUC": scores["test_roc_auc"].mean(),
-        "Balanced Accuracy": scores["test_balanced_accuracy"].mean(),
-        "F1": scores["test_f1"].mean(),
-        "Mittlere Fit-Zeit (s)": scores["fit_time"].mean(),
-    }
 
 # %% Teil 3: Vorverarbeitungs-Pipeline
 numeric_preparation = Pipeline([
@@ -451,11 +445,18 @@ ergebnis_tabelle = final_results.copy()
 print("\n=== FINAL RANDOM FOREST ERGEBNIS ===")
 print(final_results.round(4))
 
+# %% Teil 9: Export der Ergebnistabelle nach output/tables/03_random_forest/
+ensure_output_dirs()
+_export_path_03 = get_table_path("03_random_forest", "03_random_forest_ergebnisse.csv")
+final_results.to_csv(_export_path_03, index=False)
+print(f"[Gespeichert] {_export_path_03}")
+
+_rt_cm.__exit__(None, None, None)
+
 
 def main():
     pass
 
 
 if __name__ == "__main__":
-    with measure_runtime("03_random_forest"):
-        main()
+    main()

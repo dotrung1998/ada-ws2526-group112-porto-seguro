@@ -1,4 +1,4 @@
-# 🚗 Porto Seguro’s Safe Driver Prediction – Machine Learning Pipeline
+# Porto Seguro's Safe Driver Prediction – Machine Learning Pipeline
 
 Dieses Repository enthält ein vollständiges End-to-End Machine-Learning-Projekt zur Vorhersage von Schadensfällen bei Kfz-Versicherungen auf Basis des Datensatzes **Porto Seguro's Safe Driver Prediction** (OpenML ID: `42742`).
 
@@ -6,7 +6,7 @@ Das Projekt beinhaltet explorative Datenanalyse (EDA), standardisiertes Preproce
 
 ---
 
-## 📑 Inhaltsverzeichnis
+## Inhaltsverzeichnis
 1. [Projektübersicht & Architektur](#-projektübersicht--architektur)
 2. [Projekt- & Ordnerstruktur](#-projekt--ordnerstruktur)
 3. [Voraussetzungen](#-voraussetzungen)
@@ -20,55 +20,55 @@ Das Projekt beinhaltet explorative Datenanalyse (EDA), standardisiertes Preproce
 
 ---
 
-## 🔬 Projektübersicht & Architektur
+## Projektübersicht & Architektur
 
 Aufgrund des starken Klassenungleichgewichts (ca. 3,6 % Schadensfälle) setzt dieses Projekt auf:
 - **Stratifizierte Splits** (`stratify=y`) für eine faire Validierung.
-- **Primäre Evaluationsmetriken:** PR-AUC (Average Precision) und ROC-AUC.
-- **Einheitliche Preprocessing-Pipeline:**
+- **Primäre Evaluationsmetriken:** PR-AUC (Average Precision) und ROC-AUC, ergänzend Balanced Accuracy, F1, Precision, Recall und Confusion Matrix.
+- **Einheitliche Preprocessing-Logik**, die in jedem Modellskript (02–05) identisch als eigene `ColumnTransformer`-Pipeline aufgebaut wird:
   - *Numerische Features:* Median-Imputation + `StandardScaler`.
-  - *Kategoriale Features (`_cat`):* Konstante Imputation (`Missing`) + `OneHotEncoder(handle_unknown="ignore")`.
+  - *Kategoriale Features (`_cat`):* Konstante Imputation (`"Missing"`) + `OneHotEncoder(handle_unknown="ignore")`.
   - *Binäre Features (`_bin`):* Modus-Imputation (`most_frequent`).
-- **Zentrale Konfiguration:** Alle Parameter, Seeds (`random_state=42`) und Exportpfade werden zentral über `config.py` gesteuert.
+- **Zentrale Konfiguration:** Alle Pfade, Seeds (`RANDOM_STATE = 42`) und Exportordner werden zentral über `config.py` gesteuert.
+- **Automatische Orchestrierung:** `06_gesamtauswertung_und_ergebnisse.py` prüft für jedes Modell, ob bereits eine Ergebnis-CSV existiert, und startet bei Bedarf automatisch das jeweilige Modellskript (02–05) als eigenen Python-Prozess (`subprocess`). Bereits vorhandene Ergebnisse werden nicht erneut berechnet, außer mit dem Flag `--force-rerun`.
 
 ---
 
-## 📂 Projekt- & Ordnerstruktur
+## Projekt- & Ordnerstruktur
 
 ```text
 .
 ├── 01_eda.py                                # Explorative Datenanalyse & Feature-Visualisierung
-├── 02_logistic_regression.py                # Einzelmodul: Logistische Regression
-├── 03_random_forest.py                      # Einzelmodul: Random Forest
+├── 02_logistic_regression.py                # Einzelmodul: Logistische Regression (inkl. eigener Preprocessing-Pipeline)
+├── 03_random_forest.py                      # Einzelmodul: Random Forest (Learning Curve, manuelle Hyperparametersuche)
 ├── 04_xgboost_histgradientboosting.py       # Einzelmodul: Boosting (XGBoost vs. HistGradientBoosting)
-├── 05_dimensionsreduktion_linear_svc.py     # Einzelmodul: LinearSVC & Dimensionsreduktion (PCA/SVD)
-├── 06_gesamtauswertung_und_ergebnisse.py    # ★ HAUPTSKRIPT: Führt alle Modelle aus & aggregiert Ergebnisse
+├── 05_dimensionsreduktion_linear_svc.py     # Einzelmodul: LinearSVC & Dimensionsreduktion (SelectKBest/PCA/TruncatedSVD)
+├── 06_gesamtauswertung_und_ergebnisse.py    # ★ HAUPTSKRIPT: Startet fehlende Modellskripte automatisch & aggregiert Ergebnisse
 │
-├── config.py                                # Zentrale Pfad- & Hyperparameter-Konfiguration
-├── data_loading.py                          # Automatischer OpenML-Download & CSV-Export
-├── preprocessing.py                         # Reusable ColumnTransformer & Feature-Gruppierung
-├── splitting.py                             # Stratifizierte Train/Test-Split-Logik
-├── evaluation.py                            # Metrik-Berechnung & Reporting-Funktionen
+├── config.py                                # Zentrale Pfad-, Seed- & Output-Konfiguration
+├── data_loading.py                          # Automatischer OpenML-Download (inkl. Retry) & CSV-Export nach Kategorie
+├── results_summary.py                       # Zusammenführung & Spalten-Standardisierung der finalen Ergebnistabellen
 ├── plotting.py                              # Visualisierungsmodule (PNG-Export)
-├── timing.py                                # Automatisches Runtime-Logging
+├── timing.py                                # Laufzeitmessung & -aggregation (runtime_log.csv / runtime_summary.csv)
 ├── requirements.txt                         # Python-Abhängigkeiten
-└── output/                                  # Automatisch generierte Ergebnisse
-    ├── data/                                # Aufgeteilte CSV-Dateien (individuell, fahrzeug, etc.)
-    ├── figures/                             # Exportierte Plots (.png)
-    └── tables/                              # finale_ergebnistabelle.csv, runtime_summary.csv
+└── output/                                  # Automatisch generierte Ergebnisse (wird bei Bedarf angelegt)
+    ├── data/                                # Nach Kategorie exportierte CSV-Dateien (individuell, regional, fahrzeug, berechnet)
+    ├── figures/                             # Exportierte Plots (.png), je Skript in einem Unterordner (z. B. 01_eda/, 06_model_comparison/)
+    └── tables/                              # Ergebnistabellen je Modell in Unterordnern (z. B. tables/02_logistic_regression/...csv)
+                                              #   sowie übergreifend: runtime_log.csv, runtime_summary.csv, finale_ergebnistabelle.csv
 ```
 
 ---
 
-## ⚙️ Voraussetzungen
+## Voraussetzungen
 
 - **Python:** Version `3.9` bis `3.11` (empfohlen: `3.10` oder `3.11`)
 - **Git** (für lokales Klonen)
-- Aktive Internetverbindung beim ersten Ausführen (zum automatischen Download von OpenML)
+- Aktive Internetverbindung beim ersten Ausführen (zum automatischen Download von OpenML, Data-ID `42742`)
 
 ---
 
-## 🚀 Schnellstart & Installation
+## Schnellstart & Installation
 
 ### Option A: GitHub Codespaces (Browserbasiert)
 
@@ -132,10 +132,7 @@ Aufgrund des starken Klassenungleichgewichts (ca. 3,6 % Schadensfälle) setzt di
 
 ---
 
-## ▶️ Pipeline-Ausführung (Empfohlener Ablauf)
-
-> ⚡ **Wichtiger Hinweis zur Laufzeitersparnis:**  
-> Du musst **nicht** alle Skripte einzeln nacheinander ausführen! Um doppelte Rechenzeiten zu vermeiden, besteht der reguläre Ablauf aus nur **zwei Schritten**:
+## Pipeline-Ausführung (Empfohlener Ablauf)
 
 ### Schritt 1: Explorative Datenanalyse (EDA)
 Lädt den Rohdatensatz automatisch von OpenML herunter, exportiert die Datenkategorien nach `output/data/` und erstellt alle Verteilungs- und Korrelationsgrafiken:
@@ -145,48 +142,62 @@ python 01_eda.py
 
 ---
 
-### Schritt 2: Gesamtauswertung & Alle Modelle ausführen
-Das Skript **`06_gesamtauswertung_und_ergebnisse.py`** ist der zentrale Orchestrator. Es lädt bzw. trainiert alle optimierten Modelle (Logistische Regression, Random Forest, XGBoost / HistGradientBoosting, LinearSVC mit Dimensionsreduktion), fasst die Metriken zusammen und erstellt die finale Vergleichstabelle sowie die Gesamtplots:
+### Schritt 2: Gesamtauswertung & alle Modelle ausführen
+Das Skript **`06_gesamtauswertung_und_ergebnisse.py`** ist der zentrale Orchestrator. Für jedes der vier Modelle (Logistische Regression, Random Forest, XGBoost / HistGradientBoosting, LinearSVC mit Dimensionsreduktion) prüft es zunächst, ob bereits eine Ergebnis-CSV in `output/tables/<modell>/` existiert. Fehlt diese, wird das zugehörige Modellskript automatisch als eigener Prozess gestartet; existierende Ergebnisse werden nicht erneut berechnet. Anschließend fasst das Skript alle Metriken zusammen und erstellt die finale Vergleichstabelle sowie die Gesamtplots:
 ```bash
 python 06_gesamtauswertung_und_ergebnisse.py
 ```
 
+Um alle vier Modellskripte unabhängig vom aktuellen Stand der CSVs zwangsweise neu auszuführen, steht folgendes Flag zur Verfügung:
+```bash
+python 06_gesamtauswertung_und_ergebnisse.py --force-rerun
+```
+
 ---
 
-### ℹ️ Optionale Einzelausführung (Nur für Detailanalysen)
+### Optionale Einzelausführung (Nur für Detailanalysen)
 
 Falls du ein bestimmtes Modell separat untersuchen, detaillierte Lernkurven analysieren oder Koeffizienten prüfen möchtest, kannst du die jeweiligen Skripte auch isoliert ausführen:
 
 | Skript | Fokus / Zweck |
 | :--- | :--- |
-| `python 02_logistic_regression.py` | Detaillierte Koeffizientenanalyse, PCA-Gegenprüfung & Threshold-Analyse für LogReg. |
-| `python 03_random_forest.py` | Detaillierte Learning Curves & manuelle Hyperparametersuche für Random Forest. |
-| `python 04_xgboost_histgradientboosting.py` | Direkter Modellvergleich & RandomSearch für Gradient-Boosting-Algorithmen. |
-| `python 05_dimensionsreduktion_linear_svc.py` | Feature-Selektion (`SelectKBest`), `PCA` & `TruncatedSVD` kombiniert mit LinearSVC. |
+| `python 02_logistic_regression.py` | PCA-Gegenprüfung, GridSearchCV über `C`, Koeffizientenanalyse & Schwellenwert-Analyse (Threshold 0,50–0,70) für LogReg. |
+| `python 03_random_forest.py` | Learning Curve, manueller Vergleich mehrerer Hyperparameter-Varianten auf 50k-Stichprobe & finale Bewertung auf Testdaten. |
+| `python 04_xgboost_histgradientboosting.py` | RandomizedSearchCV & direkter Modellvergleich für XGBoost und HistGradientBoosting. |
+| `python 05_dimensionsreduktion_linear_svc.py` | Learning Curve, Feature-Selektion (`SelectKBest`), `PCA` & `TruncatedSVD` im Vergleich, kombiniert mit `LinearSVC`. |
+
+Jedes Skript exportiert seine finale Ergebnistabelle automatisch nach `output/tables/<skriptname>/` und protokolliert seine Laufzeit in `output/tables/runtime_log.csv`.
 
 ---
 
-## 📊 Ergebnisse & Metriken
+## Ergebnisse & Metriken
 
 Nach der Ausführung von Schritt 1 und 2 liegen alle Resultate im `output/`-Ordner bereit:
 
-1. **`output/tables/finale_ergebnistabelle.csv`:**
-   Enthält alle gemeinsamen Test-Metriken (PR-AUC, ROC-AUC, Balanced Accuracy, F1, Precision, Recall, Confusion Matrix) im direkten Vergleich über alle Modellklassen hinweg.
-2. **`output/tables/runtime_summary.csv`:**
-   Übersicht der Laufzeiten und Rechenaufwände.
-3. **`output/figures/`:**
-   Hochauflösende PNG-Grafiken aller ROC-/PR-Kurven, EDA-Plots und des finalen Modellvergleichs (`06_model_comparison/`).
+1. **`output/tables/<modell>/…ergebnisse.csv`:**
+   Die individuelle finale Ergebnistabelle jedes Modellskripts (02–05).
+2. **`output/tables/finale_ergebnistabelle.csv`:**
+   Von `06_gesamtauswertung_und_ergebnisse.py` erzeugte, zusammengeführte Tabelle (via `results_summary.py`) mit allen gemeinsamen Test-Metriken (PR-AUC, ROC-AUC, Balanced Accuracy, F1, Precision, Recall, Confusion Matrix) im direkten Vergleich über alle Modellklassen hinweg.
+3. **`output/tables/runtime_log.csv`:**
+   Rohes, fortlaufendes Laufzeit-Protokoll aller Skript- und Fit-Durchläufe (siehe `timing.py`).
+4. **`output/tables/runtime_summary.csv`:**
+   Aggregierte Übersicht der jeweils letzten Laufzeit pro Skript/Modell, erzeugt am Ende von `06_gesamtauswertung_und_ergebnisse.py`.
+5. **`output/figures/`:**
+   Hochauflösende PNG-Grafiken, je Skript in einem eigenen Unterordner (u. a. `01_eda/`, `02_logistic_regression/`, `03_random_forest/`, `05_dimensionsreduktion_linear_svc/` und der finale Modellvergleich in `06_model_comparison/`).
 
 ---
 
-## 🛠️ Fehlerbehebung (Troubleshooting)
+## Fehlerbehebung (Troubleshooting)
 
 - **OpenML Gateway Timeout / Download-Fehler:**
-  `data_loading.py` verfügt über einen automatischen Retry-Mechanismus (`MAX_RETRIES = 5`). Sollte der Download dennoch abbrechen, prüfe deine Internetverbindung und führe das Skript erneut aus.
+  `data_loading.py` verfügt über einen automatischen Retry-Mechanismus (`MAX_RETRIES = 5`, `RETRY_DELAY_SECONDS = 5`). Sollte der Download dennoch abbrechen, prüfe deine Internetverbindung und führe das Skript erneut aus.
 - **XGBoost unter macOS (Apple Silicon M1/M2/M3):**
   Falls bei der Installation von `xgboost` Probleme auftreten, installiere OpenMP via Homebrew:
   ```bash
   brew install libomp
   ```
-- **Stichprobengröße anpassen:**
-  In `config.py` steuert `SAMPLE_FRACTION = 0.2` den Anteil der Daten für schnelle Experimente (20 %). Für die vollständige Endabgabe kann dieser Wert auf `1.0` gesetzt werden.
+  Ist XGBoost dennoch nicht importierbar, überspringt `04_xgboost_histgradientboosting.py` das XGBoost-Modell automatisch und wertet nur HistGradientBoosting aus.
+- **Ergebnisse eines einzelnen Modells neu berechnen:**
+  Lösche die entsprechende CSV unter `output/tables/<modell>/` oder starte `06_gesamtauswertung_und_ergebnisse.py --force-rerun`, um alle vier Modellskripte neu auszuführen.
+- **Stichprobengröße/Sub-Sampling anpassen:**
+  `config.py` definiert `SAMPLE_FRACTION = 0.2` als zentralen Parameter für ein reduziertes Sub-Sampling. Einzelne Skripte (z. B. `03_random_forest.py`, `05_dimensionsreduktion_linear_svc.py`) verwenden zusätzlich eigene, im jeweiligen Skript definierte Stichprobengrößen (z. B. 50.000, 225.000 oder 300.000 Beobachtungen) für rechenintensive Zwischenschritte wie Hyperparametersuche oder Dimensionsreduktion.

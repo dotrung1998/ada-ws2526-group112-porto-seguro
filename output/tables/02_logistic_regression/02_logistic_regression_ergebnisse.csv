@@ -1,0 +1,2 @@
+Modell,C,class_weight,Test PR-AUC,Test ROC-AUC,Test Balanced Accuracy,Test F1,Test Precision,Test Recall,True Negatives,False Positives,False Negatives,True Positives,Trainingszeit gesamt (s),Vorhersagezeit Test (s)
+"Logistische Regression (optimiert, T=0.65)",1.0,balanced,0.06420354762217464,0.6311155374486788,0.5475418983574738,0.10905520731062608,0.08110536957986969,0.16639778750864254,106524,8180,3617,722,4.442732095718384,0.47121596336364746

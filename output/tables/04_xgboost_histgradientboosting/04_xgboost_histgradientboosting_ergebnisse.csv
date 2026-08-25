@@ -1,0 +1,3 @@
+Modell,class_weight,n_estimators,max_depth,learning_rate,Test PR-AUC,Test ROC-AUC,Test Balanced Accuracy,Test F1,Test Precision,Test Recall,True Negatives,False Positives,False Negatives,True Positives,Trainingszeit gesamt (s),Vorhersagezeit Test (s),max_leaf_nodes,min_samples_leaf,l2_regularization
+XGBoost (optimiert),scale_pos_weight=26.4,300,4.0,0.05,0.06570845960247372,0.6402181796601851,0.5992477343650517,0.10131347955752025,0.055775500698649276,0.551970500115234,74159,40545,1944,2395,61.719440937042236,0.9430451393127441,,,
+HistGradientBoosting (optimiert),balanced,100,,0.05,0.06317209684830287,0.6323951419505462,0.5952397388441457,0.09915655214976342,0.05443744211786497,0.5554275178612583,72843,41861,1929,2410,109.85536599159241,1.728670358657837,15.0,100.0,0.1

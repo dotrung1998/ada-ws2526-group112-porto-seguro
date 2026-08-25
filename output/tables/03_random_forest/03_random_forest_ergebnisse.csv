@@ -1,0 +1,2 @@
+Modell,Datengrundlage,Threshold,n_estimators,max_depth,min_samples_split,min_samples_leaf,max_features,class_weight,Test PR-AUC,Test ROC-AUC,Test Balanced Accuracy,Test F1,Test Precision,Test Recall,True Negatives,False Positives,False Negatives,True Positives,Trainingszeit gesamt (s),Vorhersagezeit Test (s)
+Random Forest (Baseline/Optimiert),Testdaten,0.5,50,10,2,1,sqrt,balanced,0.06035454829532305,0.6246016641778347,0.586578980719688,0.10157635967357696,0.057063128221190806,0.4618575708688638,81589,33115,2335,2004,9.45731520652771,0.43596792221069336

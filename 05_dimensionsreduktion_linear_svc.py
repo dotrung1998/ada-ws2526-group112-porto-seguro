@@ -29,6 +29,7 @@
 Durchführt Dimensionsreduktion und trainiert einen LinearSVC auf dem Porto-Seguro-Datensatz.
 """
 
+import os
 import time
 import numpy as np
 import pandas as pd
@@ -59,6 +60,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.svm import LinearSVC
 
+from config import ensure_output_dirs, get_table_path
 from plotting import (
     plot_svc_learning_curve,
     plot_selectkbest_results,
@@ -72,6 +74,9 @@ from timing import log_custom_runtime, measure_runtime
 RANDOM_STATE = 42
 TEST_SIZE = 0.20
 N_SPLITS = 3
+
+_rt_cm = measure_runtime("05_dimensionsreduktion_linear_svc")
+_rt_cm.__enter__()
 
 # %% [markdown]
 # ## 1. Gemeinsamer Basisblock
@@ -822,7 +827,16 @@ print(final_test_results)
 # `svd_results` und `tuning_results` dokumentieren zusätzlich die Entscheidungen
 # zur Trainingsmenge, Dimensionsreduktion und Hyperparameterwahl.
 
-# %%
+# %% Export der Ergebnistabelle nach output/tables/05_dimensionsreduktion_linear_svc/
+ensure_output_dirs()
+_export_path_05 = get_table_path(
+    "05_dimensionsreduktion_linear_svc",
+    "05_dimensionsreduktion_linear_svc_ergebnisse.csv",
+)
+final_test_results.to_csv(_export_path_05, index=False)
+print(f"[Gespeichert] {_export_path_05}")
+
+_rt_cm.__exit__(None, None, None)
 
 
 def main():
@@ -830,5 +844,4 @@ def main():
 
 
 if __name__ == "__main__":
-    with measure_runtime("05_dimensionsreduktion_linear_svc"):
-        main()
+    main()

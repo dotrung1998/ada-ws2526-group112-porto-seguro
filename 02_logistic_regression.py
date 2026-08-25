@@ -39,6 +39,7 @@ from sklearn.model_selection import (
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
+from config import ensure_output_dirs, get_table_path
 from plotting import (
     plot_pca_variance,
     plot_logreg_coefficients,
@@ -51,6 +52,9 @@ np.seterr(all="ignore")
 RANDOM_STATE = 42
 TEST_SIZE = 0.20
 N_SPLITS = 3
+
+_rt_cm = measure_runtime("02_logistic_regression")
+_rt_cm.__enter__()
 
 # %% Teil 1: Gemeinsame Datenbasis & Basisblock
 porto = fetch_openml(data_id=42742, as_frame=True)
@@ -117,31 +121,7 @@ print("Testdaten:", X_test.shape)
 print("Positive Klasse im Training:", round(y_train.mean(), 4))
 print(f"Anzahl Merkmale: {len(numeric_features)} numerisch, {len(categorical_features)} kategorial, {len(binary_features)} binär")
 
-# %% Teil 2: Hilfsfunktionen
-def summarize_cv(scores):
-    return {
-        "PR-AUC": scores["test_pr_auc"].mean(),
-        "PR-AUC Std": scores["test_pr_auc"].std(),
-        "ROC-AUC": scores["test_roc_auc"].mean(),
-        "Balanced Accuracy": scores["test_balanced_accuracy"].mean(),
-        "F1": scores["test_f1"].mean(),
-        "Mittlere Fit-Zeit (s)": scores["fit_time"].mean(),
-    }
-
-
-def stratified_subsample(X_data, y_data, n_samples, random_state=RANDOM_STATE):
-    if n_samples is None or n_samples >= len(X_data):
-        return X_data.copy(), y_data.copy()
-    X_sub, _, y_sub, _ = train_test_split(
-        X_data,
-        y_data,
-        train_size=n_samples,
-        random_state=random_state,
-        stratify=y_data,
-    )
-    return X_sub, y_sub
-
-# %% Teil 3: Vorverarbeitungs-Pipeline
+# %% Teil 2: Vorverarbeitungs-Pipeline
 numeric_transformer = Pipeline(steps=[
     ("imputer", SimpleImputer(strategy="median")),
     ("scaler", StandardScaler()),
@@ -162,7 +142,7 @@ preprocessor = ColumnTransformer(transformers=[
     ("binary", binary_transformer, binary_features),
 ])
 
-# %% Teil 4: Prüfung der Dimensionsreduktion (PCA)
+# %% Teil 3: Prüfung der Dimensionsreduktion (PCA)
 numeric_pca = Pipeline(steps=[
     ("imputer", SimpleImputer(strategy="median")),
     ("scaler", StandardScaler()),
@@ -193,7 +173,7 @@ pca_compare_results = pd.concat([
 print("\n=== Vergleich PCA vs. ohne PCA ===")
 print(pca_compare_results.round(4))
 
-# %% Teil 5: Baseline-Modell der Logistischen Regression
+# %% Teil 4: Baseline-Modell der Logistischen Regression
 baseline_pipeline = Pipeline(steps=[
     ("preprocessor", preprocessor),
     ("model", LogisticRegression(
@@ -209,7 +189,7 @@ baseline_cv_results = evaluate_pipeline("LogReg Baseline", baseline_pipeline)
 print("\n=== Baseline CV-Ergebnisse ===")
 print(baseline_cv_results.round(4))
 
-# %% Teil 6: Hyperparameteroptimierung (GridSearchCV)
+# %% Teil 5: Hyperparameteroptimierung (GridSearchCV)
 param_grid_lr = {
     "model__C": [0.01, 0.1, 1.0, 10.0],
 }
@@ -241,10 +221,10 @@ print(f"Beste CV PR-AUC: {grid_search_lr.best_score_:.6f}")
 
 best_lr_model = grid_search_lr.best_estimator_
 
-# %% Teil 7: Interpretation der Modellkoeffizienten
+# %% Teil 6: Interpretation der Modellkoeffizienten
 plot_logreg_coefficients(best_lr_model, numeric_features, categorical_features, binary_features)
 
-# %% Teil 8: Finales Modell & Schwellenwert-Analyse
+# %% Teil 7: Finales Modell & Schwellenwert-Analyse
 final_pipeline = best_lr_model
 
 final_fit_start = time.time()
@@ -290,7 +270,7 @@ threshold_results_df = pd.DataFrame(threshold_results)
 print("\n=== Schwellenwert-Analyse ===")
 print(threshold_results_df.round(6))
 
-# %% Teil 9: Finale Ergebnistabelle mit optimiertem Schwellenwert (T=0.65)
+# %% Teil 8: Finale Ergebnistabelle mit optimiertem Schwellenwert (T=0.65)
 OPTIMAL_THRESHOLD = 0.65
 y_test_pred_opt = (y_test_proba >= OPTIMAL_THRESHOLD).astype(int)
 
@@ -333,11 +313,22 @@ print(final_results_table.round({
     "Vorhersagezeit Test (s)": 2,
 }))
 
+# %% Teil 9: Export der Ergebnistabelle nach output/tables/02_logistic_regression/
+# Jedes Modellskript bekommt einen eigenen Unterordner (analog zu den
+# Abbildungen in output/figures/), damit die CSVs sauber pro Modell getrennt sind.
+ensure_output_dirs()
+_export_path_02 = get_table_path("02_logistic_regression", "02_logistic_regression_ergebnisse.csv")
+final_results_table.to_csv(_export_path_02, index=False)
+print(f"[Gespeichert] {_export_path_02}")
+
+_rt_cm.__exit__(None, None, None)
+
 
 def main():
+    """Wird nur fuer die manuelle Direktausfuehrung als Marker benoetigt;
+    die eigentliche Berechnung ist bereits oben auf Modulebene gelaufen."""
     pass
 
 
 if __name__ == "__main__":
-    with measure_runtime("02_logistic_regression"):
-        main()
+    main()

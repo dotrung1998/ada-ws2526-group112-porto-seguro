@@ -1,0 +1,2 @@
+Modell,SelectKBest k,PCA-Komponenten,C,class_weight,Test PR-AUC,Test ROC-AUC,Test Balanced Accuracy,Test F1,Test Precision,Test Recall,True Negatives,False Positives,False Negatives,True Positives,Trainingszeit gesamt (s),Vorhersagezeit Test (s)
+SelectKBest (k=80),80,,0.1,"{0: 1, 1: 10}",0.06491802577085931,0.6315745563333153,0.5165311345299894,0.0661715057393653,0.12365930599369085,0.045171698548052544,113315,1389,4143,196,8.74794602394104,0.8046739101409912

@@ -3,6 +3,7 @@
 Vergleicht XGBoost und HistGradientBoosting auf dem Porto-Seguro-Datensatz.
 """
 
+import os
 import time
 import warnings
 
@@ -35,6 +36,7 @@ from sklearn.model_selection import (
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder, StandardScaler
 
+from config import ensure_output_dirs, get_table_path
 from plotting import save_current_figure
 from timing import log_custom_runtime, measure_runtime
 
@@ -51,6 +53,9 @@ except Exception as exc:
 RANDOM_STATE = 42
 TEST_SIZE = 0.20
 N_SPLITS = 3
+
+_rt_cm = measure_runtime("04_xgboost_histgradientboosting")
+_rt_cm.__enter__()
 
 # %% Teil 1: Gemeinsame Datenbasis
 porto = fetch_openml(data_id=42742, as_frame=True)
@@ -310,11 +315,21 @@ final_test_results = ergebnis_tabelle.copy()
 print("\n=== FINALE BOOSTING ERGEBNISSE ===")
 print(ergebnis_tabelle.round(4))
 
+# %% Teil 7: Export der Ergebnistabelle nach output/tables/04_xgboost_histgradientboosting/
+ensure_output_dirs()
+_export_path_04 = get_table_path(
+    "04_xgboost_histgradientboosting",
+    "04_xgboost_histgradientboosting_ergebnisse.csv",
+)
+ergebnis_tabelle.to_csv(_export_path_04, index=False)
+print(f"[Gespeichert] {_export_path_04}")
+
+_rt_cm.__exit__(None, None, None)
+
 
 def main():
     pass
 
 
 if __name__ == "__main__":
-    with measure_runtime("04_xgboost_histgradientboosting"):
-        main()
+    main()
