@@ -36,7 +36,14 @@ from sklearn.model_selection import (
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder, StandardScaler
 
-from config import ensure_output_dirs, get_table_path
+from config import (
+    ensure_output_dirs, 
+    get_table_path,
+    OPENML_DATA_ID,
+    RANDOM_STATE,
+    TEST_SIZE,
+    N_SPLITS
+)
 from plotting import save_current_figure
 from timing import log_custom_runtime, measure_runtime
 
@@ -50,15 +57,11 @@ except Exception as exc:
     HAS_XGBOOST = False
     print(f"XGBoost ist in dieser Umgebung nicht verfuegbar und wird uebersprungen: {exc}")
 
-RANDOM_STATE = 42
-TEST_SIZE = 0.20
-N_SPLITS = 3
-
 _rt_cm = measure_runtime("04_xgboost_histgradientboosting")
 _rt_cm.__enter__()
 
 # %% Teil 1: Gemeinsame Datenbasis
-porto = fetch_openml(data_id=42742, as_frame=True)
+porto = fetch_openml(data_id=OPENML_DATA_ID, as_frame=True)
 
 X = porto.data.copy().replace(-1, np.nan)
 y = pd.to_numeric(porto.target).astype("int8")

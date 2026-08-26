@@ -29,7 +29,6 @@
 Durchführt Dimensionsreduktion und trainiert einen LinearSVC auf dem Porto-Seguro-Datensatz.
 """
 
-import os
 import time
 import numpy as np
 import pandas as pd
@@ -60,7 +59,15 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.svm import LinearSVC
 
-from config import ensure_output_dirs, get_table_path
+from config import (
+    ensure_output_dirs, 
+    get_table_path,
+    OPENML_DATA_ID,
+    RANDOM_STATE,
+    TEST_SIZE,
+    N_SPLITS
+)
+
 from plotting import (
     plot_svc_learning_curve,
     plot_selectkbest_results,
@@ -70,10 +77,6 @@ from plotting import (
     plot_dimensionality_reduction_comparison,
 )
 from timing import log_custom_runtime, measure_runtime
-
-RANDOM_STATE = 42
-TEST_SIZE = 0.20
-N_SPLITS = 3
 
 _rt_cm = measure_runtime("05_dimensionsreduktion_linear_svc")
 _rt_cm.__enter__()
@@ -89,7 +92,7 @@ _rt_cm.__enter__()
 # eine vergleichbare Klassenverteilung.
 
 # %%
-porto = fetch_openml(data_id=42742, as_frame=True)
+porto = fetch_openml(data_id=OPENML_DATA_ID, as_frame=True)
 
 X = porto.data.copy().replace(-1, np.nan)
 y = pd.to_numeric(porto.target).astype("int8")
@@ -744,12 +747,9 @@ print(
 # %% [markdown]
 # ## 9. Finale Bewertung auf dem Hold-out-Testdatensatz
 #
-# Erst nach Abschluss von Learning Curve, Dimensionsreduktion und
-# Hyperparameteroptimierung wird die ausgewählte Pipeline auf dem vollständigen
-# Trainingsdatensatz neu trainiert. Anschließend wird sie genau einmal auf dem
-# zuvor nicht für die Modellauswahl verwendeten Hold-out-Testdatensatz bewertet.
-# Nach dieser Auswertung werden keine Hyperparameter anhand des Testdatensatzes
-# angepasst.
+# Die in der Hyperparameteroptimierung beste Variante wird nun erneut auf dem
+# vollständigen Trainingsdatensatz trainiert. Dabei wird die Trainingszeit
+# separat erfasst und für die spätere Laufzeitauswertung gespeichert.
 
 # %%
 final_pipeline = clone(best_optimized_pipeline)
@@ -767,11 +767,9 @@ print("Verwendete Testdaten:", X_test.shape)
 print("Trainingszeit auf allen Trainingsdaten (s):", round(final_fit_time, 2))
 
 # %% [markdown]
-# PR-AUC und ROC-AUC werden aus den kontinuierlichen
-# `decision_function`-Scores berechnet, weil `LinearSVC` keine
-# `predict_proba`-Wahrscheinlichkeiten bereitstellt. Balanced Accuracy, F1,
-# Precision, Recall und die Confusion Matrix basieren dagegen auf den finalen
-# Klassenentscheidungen des Modells.
+# Anschließend wird die finale Pipeline einmalig auf dem bisher nicht verwendeten
+# Testdatensatz bewertet. Die Ergebnistabelle enthält die zentralen Modellmetriken,
+# die Konfusionsmatrix sowie Trainings- und Vorhersagezeit.
 
 # %%
 final_predict_start = time.time()

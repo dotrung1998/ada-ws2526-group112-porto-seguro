@@ -39,7 +39,14 @@ from sklearn.model_selection import (
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-from config import ensure_output_dirs, get_table_path
+from config import (
+    ensure_output_dirs, 
+    get_table_path,
+    OPENML_DATA_ID,
+    RANDOM_STATE,
+    TEST_SIZE,
+    N_SPLITS
+)
 from plotting import (
     plot_pca_variance,
     plot_logreg_coefficients,
@@ -49,15 +56,11 @@ from timing import log_custom_runtime, measure_runtime
 
 np.seterr(all="ignore")
 
-RANDOM_STATE = 42
-TEST_SIZE = 0.20
-N_SPLITS = 3
-
 _rt_cm = measure_runtime("02_logistic_regression")
 _rt_cm.__enter__()
 
 # %% Teil 1: Gemeinsame Datenbasis & Basisblock
-porto = fetch_openml(data_id=42742, as_frame=True)
+porto = fetch_openml(data_id=OPENML_DATA_ID, as_frame=True)
 
 X = porto.data.copy().replace(-1, np.nan)
 y = pd.to_numeric(porto.target).astype("int8")

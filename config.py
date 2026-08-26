@@ -26,20 +26,17 @@ CATEGORY_MAPPING = {
 MAX_RETRIES = 5
 RETRY_DELAY_SECONDS = 5
 
-# Anteil der Daten, der fuer das Sub-Sampling verwendet wird
-SAMPLE_FRACTION = 0.2
-
-# Anteil Test-Split innerhalb des Splits
+# Anteil der Daten für die abschließende Teststichprobe
 TEST_SIZE = 0.2
+
+# Anzahl der stratifizierten CV-Folds als Kompromiss aus Stabilität und Rechenzeit
+N_SPLITS = 3
 
 # ---------------------------------------------------------------------------
 # Zentrale Output-Ordnerstruktur
 # output/
-#   figures/   -> alle Plots (.png), je Skript in einem eigenen Unterordner
-#   tables/    -> Ergebnistabellen (.csv), je Modellskript in einem eigenen
-#                 Unterordner (z.B. tables/02_logistic_regression/...csv);
-#                 uebergreifende Dateien (runtime_log.csv, runtime_summary.csv,
-#                 finale_ergebnistabelle.csv) bleiben direkt in tables/.
+#   figures/   -> alle Plots (.png)
+#   tables/    -> Ergebnistabellen (.csv), Runtime-Log, Runtime-Summary
 #   data/      -> exportierte Teil-Datensaetze (CSV)
 # ---------------------------------------------------------------------------
 OUTPUT_DIR = "output"
@@ -57,21 +54,6 @@ def ensure_output_dirs() -> None:
     """Legt alle benoetigten Output-Unterordner an, falls sie fehlen."""
     for d in (OUTPUT_DIR, FIGURES_DIR, TABLES_DIR, DATA_EXPORT_DIR):
         os.makedirs(d, exist_ok=True)
-
-
-def get_table_path(subdir: str, filename: str) -> str:
-    """
-    Gibt den vollen Pfad fuer eine Ergebnistabelle innerhalb eines
-    Unterordners von output/tables/ zurueck und legt den Unterordner bei
-    Bedarf an.
-
-    Beispiel:
-        get_table_path("02_logistic_regression", "02_logistic_regression_ergebnisse.csv")
-        -> "output/tables/02_logistic_regression/02_logistic_regression_ergebnisse.csv"
-    """
-    target_dir = os.path.join(TABLES_DIR, subdir)
-    os.makedirs(target_dir, exist_ok=True)
-    return os.path.join(target_dir, filename)
 
 
 # Beim Import von config.py direkt sicherstellen, dass die aktiven Ordner existieren.
