@@ -199,5 +199,3 @@ Nach der Ausführung von Schritt 1 und 2 liegen alle Resultate im `output/`-Ordn
   Ist XGBoost dennoch nicht importierbar, überspringt `04_xgboost_histgradientboosting.py` das XGBoost-Modell automatisch und wertet nur HistGradientBoosting aus.
 - **Ergebnisse eines einzelnen Modells neu berechnen:**
   Lösche die entsprechende CSV unter `output/tables/<modell>/` oder starte `06_gesamtauswertung_und_ergebnisse.py --force-rerun`, um alle vier Modellskripte neu auszuführen.
-- **Stichprobengröße/Sub-Sampling anpassen:**
-  `config.py` definiert `SAMPLE_FRACTION = 0.2` als zentralen Parameter für ein reduziertes Sub-Sampling. Einzelne Skripte (z. B. `03_random_forest.py`, `05_dimensionsreduktion_linear_svc.py`) verwenden zusätzlich eigene, im jeweiligen Skript definierte Stichprobengrößen (z. B. 50.000, 225.000 oder 300.000 Beobachtungen) für rechenintensive Zwischenschritte wie Hyperparametersuche oder Dimensionsreduktion.
