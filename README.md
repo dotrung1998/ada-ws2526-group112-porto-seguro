@@ -148,16 +148,17 @@ Das Skript **`06_gesamtauswertung_und_ergebnisse.py`** ist der zentrale Orchestr
 python 06_gesamtauswertung_und_ergebnisse.py
 ```
 
-Um alle vier Modellskripte unabhängig vom aktuellen Stand der CSVs zwangsweise neu auszuführen, steht folgendes Flag zur Verfügung:
+**⚠️ WICHTIG: Um alle vier Modellskripte (02–05) zwangsweise neu auszuführen, muss das Flag `--force-rerun` verwendet werden:**
 ```bash
 python 06_gesamtauswertung_und_ergebnisse.py --force-rerun
 ```
+Ohne dieses Flag werden bereits existierende Ergebnisse übersprungen und nur die finale Aggregation durchgeführt (sehr schnell). Mit `--force-rerun` werden alle Modelle komplett neu trainiert und evaluiert (kann mehrere Minuten dauern).
 
 ---
 
 ### Optionale Einzelausführung (Nur für Detailanalysen)
 
-Falls du ein bestimmtes Modell separat untersuchen, detaillierte Lernkurven analysieren oder Koeffizienten prüfen möchtest, kannst du die jeweiligen Skripte auch isoliert ausführen:
+Falls wir ein bestimmtes Modell separat untersuchen, detaillierte Lernkurven analysieren oder Koeffizienten prüfen möchtest, können wir die jeweiligen Skripte auch isoliert ausführen:
 
 | Skript | Fokus / Zweck |
 | :--- | :--- |
