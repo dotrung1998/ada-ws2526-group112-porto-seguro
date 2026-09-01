@@ -56,5 +56,21 @@ def ensure_output_dirs() -> None:
         os.makedirs(d, exist_ok=True)
 
 
+def get_table_path(subdir: str, filename: str) -> str:
+    """
+    Liefert den vollständigen Pfad für eine Ergebnistabelle.
+    
+    Args:
+        subdir: Unterordner unter output/tables/ (z.B. "01_eda", "02_logistic_regression")
+        filename: Name der Datei (z.B. "01_eda_duplikate.csv")
+    
+    Returns:
+        Vollständiger Pfad zur Tabelle (z.B. "output/tables/01_eda/01_eda_duplikate.csv")
+    """
+    table_subdir = os.path.join(TABLES_DIR, subdir)
+    os.makedirs(table_subdir, exist_ok=True)
+    return os.path.join(table_subdir, filename)
+
+
 # Beim Import von config.py direkt sicherstellen, dass die aktiven Ordner existieren.
 ensure_output_dirs()
